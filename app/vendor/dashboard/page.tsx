@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import ChatModal from '@/app/(auth)/components/ChatModal'; 
+import Link from 'next/link'; // <-- Added the Link import here!
 
 export default function VendorDashboard() {
   const [events, setEvents] = useState<any[]>([]);
@@ -15,7 +16,7 @@ export default function VendorDashboard() {
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [activeChat, setActiveChat] = useState<{ id: string, name: string } | null>(null);
 
-  // NEW: States for the "Make Offer" Booking Modal
+  // States for the "Make Offer" Booking Modal
   const [bookingModalEvent, setBookingModalEvent] = useState<any | null>(null);
   const [offerPrice, setOfferPrice] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,7 +47,8 @@ export default function VendorDashboard() {
             event_name,
             event_date,
             base_stall_fee,
-            organizer_id 
+            organizer_id,
+            contact_phone
           )
         `)
         .eq('vendor_id', user.id)
@@ -69,18 +71,15 @@ export default function VendorDashboard() {
     else setFilteredEvents(events.filter((event) => event.event_name.toLowerCase().includes(query)));
   };
 
-  // OPEN THE MODAL PRE-FILLED WITH THE BASE PRICE
   const openBookingModal = (event: any) => {
     setBookingModalEvent(event);
-    setOfferPrice(event.base_stall_fee); // Defaults to the original price
+    setOfferPrice(event.base_stall_fee);
   };
 
-  // SUBMIT THE CUSTOM OFFER TO THE DATABASE
   const submitBookingRequest = async () => {
     if (!currentUserId || !bookingModalEvent) return;
     setIsSubmitting(true);
     
-    // The 5% cut is now calculated based on whatever price they typed in!
     const festopiyaCut = offerPrice * 0.05; 
 
     const { error } = await supabase
@@ -88,9 +87,9 @@ export default function VendorDashboard() {
       .insert([{
           event_id: bookingModalEvent.id,
           vendor_id: currentUserId,
-          agreed_fee: offerPrice,      // Organizer gets this
-          total_amount: offerPrice,    // Vendor pays this
-          commission_amount: festopiyaCut, // Festopiya gets 5% of the negotiated price
+          agreed_fee: offerPrice,      
+          total_amount: offerPrice,    
+          commission_amount: festopiyaCut, 
           status: 'pending' 
       }]);
 
@@ -108,9 +107,16 @@ export default function VendorDashboard() {
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-6xl mx-auto">
         
-        <div className="mb-10 border-b-4 border-black pb-6">
-          <h1 className="text-4xl font-black text-gray-900 tracking-tighter italic">VENDOR DASHBOARD</h1>
-          <p className="text-gray-500 mt-2 font-bold uppercase tracking-widest">Negotiate first, then make your offer.</p>
+        {/* NEW HEADER WITH PROFILE BUTTON */}
+        <div className="mb-10 border-b-4 border-black pb-6 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+          <div>
+            <h1 className="text-4xl font-black text-gray-900 tracking-tighter italic">VENDOR DASHBOARD</h1>
+            <p className="text-gray-500 mt-2 font-bold uppercase tracking-widest">Negotiate first, then make your offer.</p>
+          </div>
+          
+          <Link href="/vendor/profile" className="bg-white border-2 border-gray-200 hover:border-black text-gray-900 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-sm">
+            Edit Profile ⚙️
+          </Link>
         </div>
 
         {/* SECTION 1: MY BOOKINGS TRACKER */}
